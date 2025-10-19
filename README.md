@@ -15,7 +15,9 @@ RRT-PRM-Hybrid/
 ├── rrt_src/              # RRT algorithm implementation
 │   ├── rrt.py            # Main RRT execution
 │   └── rrt_graph.py      # RRT-specific graph logic
-├── prm_src/              # PRM algorithm (to be implemented)
+├── prm_src/              # PRM algorithm implementation
+│   ├── prm.py            # Main PRM execution
+│   └── prm_graph.py      # PRM-specific graph logic
 └── figures/              # Output visualizations
 ```
 
@@ -49,11 +51,61 @@ python rrt_src/rrt.py
 - `step_size`: Maximum extension distance (default: 35)
 - `goal_bias`: Probability of sampling toward goal (default: 0.1)
 
+**Example Output:**
+
+![RRT Output](figures/rrt_output.png)
+
+*RRT algorithm exploring the space with tree expansion (blue) and final path (red)*
+
 ### PRM (Probabilistic Roadmap)
-*To be implemented*
+
+**Algorithm Overview:**
+- Pre-computes a roadmap of collision-free configurations
+- Three-phase approach: sampling, connection, and query
+- Samples random points in free space and connects nearby neighbors
+- Searches the roadmap using A* to find optimal path
+
+**Implementation Structure:**
+- `PRMGraph`: Extends `Graph` base class with roadmap construction and A* search
+- `build_roadmap()`: Sample N collision-free points and connect to k-nearest neighbors
+- `add_start_goal()`: Connect start and goal positions to the roadmap
+- `find_path()`: A* search to find optimal path through roadmap
+
+**Key Features:**
+- Multi-query efficiency (roadmap can be reused)
+- k-nearest neighbor connectivity
+- Bidirectional edge graph structure
+- A* pathfinding with Euclidean heuristic
+
+**Usage:**
+```python
+python prm_src/prm.py
+```
+
+**Parameters:**
+- `dimensions`: Environment size (height, width)
+- `start`: Starting position (x, y)
+- `goal`: Goal position (x, y)
+- `obstacle_size`: Size of square obstacles
+- `obstacle_count`: Number of random obstacles
+- `num_samples`: Number of roadmap samples (default: 500)
+- `k_neighbors`: Neighbors to connect per sample (default: 10)
+- `show_roadmap`: Visualize full roadmap (default: False, recommended for large roadmaps)
+
+**Example Output:**
+
+![PRM Output](figures/prm_output.png)
+
+*PRM algorithm with pre-computed roadmap (blue) and optimal path (red)*
 
 ### Hybrid Algorithm
 *To be implemented*
+
+## Algorithm Comparison
+
+![RRT vs PRM Comparison](figures/prm_vs_rrt.png)
+
+*Side-by-side comparison: RRT (right) explores incrementally, PRM (left) pre-computes a reusable roadmap*
 
 ## Core Architecture
 

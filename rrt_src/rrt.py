@@ -1,10 +1,12 @@
 import pygame
-import random
 import time
 import logging
 
 import os, sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+import random
+random.seed(42)
 
 from core.visualization import MapVisualizer
 from core.environment import Environment

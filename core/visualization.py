@@ -1,6 +1,5 @@
 """Visualization module for path planning algorithms"""
 import pygame
-from abc import ABC, abstractmethod
 
 
 class MapVisualizer:
