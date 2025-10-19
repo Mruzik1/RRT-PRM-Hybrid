@@ -71,12 +71,6 @@ python rrt_src/rrt.py
 - `add_start_goal()`: Connect start and goal positions to the roadmap
 - `find_path()`: A* search to find optimal path through roadmap
 
-**Key Features:**
-- Multi-query efficiency (roadmap can be reused)
-- k-nearest neighbor connectivity
-- Bidirectional edge graph structure
-- A* pathfinding with Euclidean heuristic
-
 **Usage:**
 ```python
 python prm_src/prm.py
