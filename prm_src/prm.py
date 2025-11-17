@@ -60,11 +60,12 @@ def run_prm(config):
         for i in range(graph.node_count()):
             visualizer.draw_node((graph.x[i], graph.y[i]), radius=1)
             for j in graph.neighbors[i]:
-                if i < j:  # Draw each edge only once
+                if i < j:
                     visualizer.draw_edge((graph.x[i], graph.y[i]), (graph.x[j], graph.y[j]))
         
-        text = f'Nodes: {graph.node_count()} Edges: {sum(len(n) for n in graph.neighbors)//2}'
-        visualizer.draw_text(text, clear_area=(10, 10, 400, 40))
+        text_y = config['dimensions'][0] - 40
+        text = f'Nodes: {graph.node_count()} | Edges: {sum(len(n) for n in graph.neighbors)//2}'
+        visualizer.draw_text(text, position=(10, text_y), clear_area=(10, text_y, 400, 30))
         visualizer.update_display()
     else:
         logging.info("Roadmap visualization skipped (show_roadmap=False)")
@@ -92,23 +93,23 @@ def run_prm(config):
     search_time = time.time() - search_start
     
     if path_found:
-        logging.info(f"Path found in {search_time:.2f}s with {len(graph.path)} nodes")
-        visualizer.draw_path(graph.get_path_coordinates())
-        
-        # Calculate path length
         path_coords = graph.get_path_coordinates()
-        total_distance = 0
-        for i in range(len(path_coords) - 1):
-            x1, y1 = path_coords[i]
-            x2, y2 = path_coords[i+1]
-            total_distance += ((x2-x1)**2 + (y2-y1)**2)**0.5
+        total_distance = sum(((path_coords[i+1][0]-path_coords[i][0])**2 + 
+                              (path_coords[i+1][1]-path_coords[i][1])**2)**0.5 
+                            for i in range(len(path_coords)-1))
         
-        text = f'Path: {len(graph.path)} nodes, Distance: {total_distance:.1f}'
-        visualizer.draw_text(text, position=(10, 40), clear_area=(10, 40, 400, 30))
+        logging.info(f"Path found in {search_time:.2f}s with {len(graph.path)} nodes")
+        logging.info(f"Path distance: {total_distance:.1f}")
+        
+        visualizer.draw_path(path_coords)
+        
+        text_y = config['dimensions'][0] - 40
+        text = f'Nodes: {len(graph.path)} | Distance: {total_distance:.1f} | Time: {build_time+search_time:.2f}s'
+        visualizer.draw_text(text, position=(10, text_y), clear_area=(10, text_y, 500, 30))
     else:
         logging.info("No path found!")
-        text = 'No path found!'
-        visualizer.draw_text(text, position=(10, 40), clear_area=(10, 40, 400, 30))
+        text_y = config['dimensions'][0] - 40
+        visualizer.draw_text('No path found!', position=(10, text_y), clear_area=(10, text_y, 400, 30))
     
     visualizer.update_display()
     
@@ -132,7 +133,7 @@ def main():
         'obstacle_count': 100,
         'num_samples': 500,
         'k_neighbors': 10,
-        'show_roadmap': False
+        'show_roadmap': True
     }
     
     try:

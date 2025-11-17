@@ -63,14 +63,25 @@ def run_rrt(config):
             visualizer.draw_edge((X[-1], Y[-1]), (X[Parent[-1]], Y[Parent[-1]]))
         
         if iteration % 5 == 0:
-            text = f'Nodes: {graph.node_count()} Iter: {iteration}'
-            visualizer.draw_text(text, clear_area=(10, 10, 300, 40))
+            text = f'Nodes: {graph.node_count()} | Iterations: {iteration}'
+            text_y = config['dimensions'][0] - 40
+            visualizer.draw_text(text, position=(10, text_y), clear_area=(10, text_y, 400, 30))
             visualizer.update_display()
         
         iteration += 1
     
+    path_coords = graph.get_path_coordinates()
+    total_distance = sum(((path_coords[i+1][0]-path_coords[i][0])**2 + 
+                          (path_coords[i+1][1]-path_coords[i][1])**2)**0.5 
+                        for i in range(len(path_coords)-1))
+    
     logging.info(f"Goal reached after {iteration} iterations")
-    visualizer.draw_path(graph.get_path_coordinates())
+    logging.info(f"Path: {len(path_coords)} nodes, Distance: {total_distance:.1f}")
+    
+    visualizer.draw_path(path_coords)
+    text_y = config['dimensions'][0] - 40
+    visualizer.draw_text(f'Nodes: {len(path_coords)} | Distance: {total_distance:.1f} | Iterations: {iteration}', 
+                        position=(10, text_y), clear_area=(10, text_y, 500, 30))
     visualizer.update_display()
     
     running = True

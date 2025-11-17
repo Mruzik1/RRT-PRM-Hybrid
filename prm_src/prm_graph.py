@@ -1,104 +1,87 @@
-"""PRM (Probabilistic Roadmap) algorithm implementation"""
+"""PRM (Probabilistic Roadmap) algorithm"""
 import heapq
+import numpy as np
+from scipy.spatial import cKDTree
 from core.graph import Graph
 
 
 class PRMGraph(Graph):
-    """PRM-specific graph implementation"""
     
     def __init__(self, start, goal, dimensions, environment, num_samples=500, k_neighbors=10):
         super().__init__(start, goal, dimensions)
         self.environment = environment
         self.num_samples = num_samples
         self.k_neighbors = k_neighbors
-        self.neighbors = []  # List of lists: neighbors[i] contains indices of neighbors of node i
+        self.neighbors = []
         self.roadmap_built = False
+        self._kdtree = None
         
-        # PRM doesn't start with any nodes (unlike RRT)
         self.x = []
         self.y = []
         self.parent = []
 
     def build_roadmap(self):
-        """Phase 1: Sample points and build roadmap"""
-        # Sample collision-free points
         samples_added = 0
         attempts = 0
         max_attempts = self.num_samples * 10
         
-        print("  Sampling collision-free points...", end='', flush=True)
+        print(f"  Sampling {self.num_samples} points...", end='', flush=True)
         while samples_added < self.num_samples and attempts < max_attempts:
             x, y = self.environment.sample_free_space()
             if self.environment.is_collision_free(x, y):
                 self.add_node(x, y)
                 self.neighbors.append([])
                 samples_added += 1
-                if samples_added % 100 == 0:
-                    print(f"\r  Sampled {samples_added}/{self.num_samples} points...", end='', flush=True)
             attempts += 1
-        print(f"\r  Sampled {samples_added} collision-free points")
+        print(f" {samples_added} sampled")
         
-        # Connect to k nearest neighbors
-        print("  Connecting neighbors...", end='', flush=True)
+        if samples_added == 0:
+            return 0
+        
+        points = np.column_stack((self.x, self.y))
+        self._kdtree = cKDTree(points)
+        
         connections = 0
         for i in range(self.node_count()):
-            # Find k nearest neighbors (only nodes not yet connected)
-            distances = []
-            for j in range(i + 1, self.node_count()):
-                if j not in self.neighbors[i]:  # Skip if already connected
-                    dist = self.distance(i, j)
-                    distances.append((dist, j))
+            distances, indices = self._kdtree.query(
+                [self.x[i], self.y[i]], 
+                k=min(self.k_neighbors + 1, self.node_count())
+            )
             
-            if not distances:
-                continue
-                
-            distances.sort()
-            nearest = [idx for _, idx in distances[:self.k_neighbors]]
-            
-            # Try to connect to nearest neighbors
-            for j in nearest:
-                if self._can_connect(i, j):
-                    self._add_bidirectional_edge(i, j)
-                    connections += 1
-            
-            if (i + 1) % 50 == 0:
-                print(f"\r  Processed {i + 1}/{self.node_count()} nodes, {connections} connections...", end='', flush=True)
+            for j_idx in range(1, len(indices)):
+                j = indices[j_idx]
+                if j > i and j not in self.neighbors[i]:
+                    if self._can_connect(i, j):
+                        self._add_bidirectional_edge(i, j)
+                        connections += 1
         
-        print(f"\r  Connected {connections} edge pairs")
-        
+        print(f"  Connected {connections} edges")
         self.roadmap_built = True
         return samples_added
 
     def add_start_goal(self):
-        """Phase 2: Add start and goal to roadmap"""
-        # Add start node at the end (to avoid index shifting issues)
         start_idx = self.node_count()
         self.add_node(self.start[0], self.start[1])
         self.neighbors.append([])
         
-        # Add goal node
         goal_idx = self.node_count()
         self.add_node(self.goal[0], self.goal[1])
         self.neighbors.append([])
         self.goal_index = goal_idx
         
-        # Connect start and goal to nearby nodes
         self._connect_to_roadmap(start_idx)
         self._connect_to_roadmap(goal_idx)
         
         return start_idx, goal_idx
 
     def find_path(self):
-        """Phase 3: Find path from start to goal using A*"""
         if not self.roadmap_built:
             return False
         
-        # Start is now at node_count - 2, goal is at node_count - 1
         start_idx = self.node_count() - 2
         goal_idx = self.goal_index
         
-        # A* algorithm
-        open_set = [(0, start_idx)]  # (f_score, node)
+        open_set = [(0, start_idx)]
         came_from = {}
         g_score = {i: float('inf') for i in range(self.node_count())}
         g_score[start_idx] = 0
@@ -115,7 +98,6 @@ class PRMGraph(Graph):
             visited.add(current)
             
             if current == goal_idx:
-                # Reconstruct path
                 self.path = []
                 while current in came_from:
                     self.path.append(current)
@@ -140,44 +122,37 @@ class PRMGraph(Graph):
         return False
 
     def _find_k_nearest(self, node_idx):
-        """Find k nearest neighbors to node_idx"""
-        distances = []
-        for i in range(self.node_count()):
-            if i != node_idx:
-                dist = self.distance(i, node_idx)
-                distances.append((dist, i))
+        if self._kdtree is None:
+            distances = [(self.distance(i, node_idx), i) for i in range(self.node_count()) if i != node_idx]
+            distances.sort()
+            return [idx for _, idx in distances[:self.k_neighbors]]
         
-        distances.sort()
-        return [idx for _, idx in distances[:self.k_neighbors]]
+        distances, indices = self._kdtree.query(
+            [self.x[node_idx], self.y[node_idx]], 
+            k=min(self.k_neighbors + 1, self.node_count())
+        )
+        return [idx for idx in indices if idx != node_idx][:self.k_neighbors]
 
     def _can_connect(self, idx1, idx2):
-        """Check if two nodes can be connected"""
-        x1, y1 = self.x[idx1], self.y[idx1]
-        x2, y2 = self.x[idx2], self.y[idx2]
-        return self.environment.is_path_clear(x1, y1, x2, y2)
+        return self.environment.is_path_clear(self.x[idx1], self.y[idx1], self.x[idx2], self.y[idx2])
 
     def _add_bidirectional_edge(self, idx1, idx2):
-        """Add edge in both directions"""
         if idx2 not in self.neighbors[idx1]:
             self.neighbors[idx1].append(idx2)
         if idx1 not in self.neighbors[idx2]:
             self.neighbors[idx2].append(idx1)
 
     def _connect_to_roadmap(self, node_idx):
-        """Connect a node to nearby nodes in roadmap"""
         nearest_indices = self._find_k_nearest(node_idx)
         for idx in nearest_indices:
             if self._can_connect(node_idx, idx):
                 self._add_bidirectional_edge(node_idx, idx)
 
     def _heuristic(self, idx1, idx2):
-        """Heuristic for A* (Euclidean distance)"""
         return self.distance(idx1, idx2)
 
     def expand(self):
-        """Not used in PRM (required by abstract base class)"""
         pass
 
     def check_goal(self):
-        """Check if path to goal exists"""
         return self.goal_reached
