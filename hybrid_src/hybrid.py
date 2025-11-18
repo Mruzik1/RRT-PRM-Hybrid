@@ -85,15 +85,15 @@ def run_hybrid(config):
     prm_time = time.time() - start_time
     logging.info(f"PRM completed in {prm_time:.2f}s")
     
-    # Draw PRM path in cyan
-    prm_color = (0, 200, 200)
+    # Draw PRM path in violet
+    prm_color = (148, 0, 211)  # Violet
     for i in range(len(graph.prm_path) - 1):
         visualizer.draw_edge(graph.prm_path[i], graph.prm_path[i+1], color=prm_color)
     for point in graph.prm_path:
         visualizer.draw_node(point, color=prm_color, radius=3)
     
     text_y = config['dimensions'][0] - 40
-    visualizer.draw_text("Phase 1b: PRM Path (cyan)", position=(10, text_y), clear_area=(10, text_y, 400, 30))
+    visualizer.draw_text("Phase 1b: PRM Path (violet)", position=(10, text_y), clear_area=(10, text_y, 400, 30))
     visualizer.update_display()
     time.sleep(0.5)
     
@@ -137,10 +137,10 @@ def run_hybrid(config):
     build_time = time.time() - start_time
     logging.info(f"Roadmap built: {len(sampled_points)} nodes, {connections} connections in {sample_time + build_time:.2f}s")
     
-    # Draw roadmap in green
+    # Draw roadmap in light green
     show_roadmap = config.get('show_roadmap', True)
     if show_roadmap:
-        roadmap_color = (0, 255, 0)
+        roadmap_color = (144, 238, 144)  # Light Green
         for i in range(graph.node_count()):
             visualizer.draw_node((graph.x[i], graph.y[i]), color=roadmap_color, radius=1)
             for j in graph.neighbors[i]:
@@ -149,7 +149,7 @@ def run_hybrid(config):
                                        color=roadmap_color)
         
         text_y = config['dimensions'][0] - 40
-        visualizer.draw_text("Phase 3: Hybrid Roadmap (green)", position=(10, text_y), clear_area=(10, text_y, 400, 30))
+        visualizer.draw_text("Phase 3: Hybrid Roadmap (light green)", position=(10, text_y), clear_area=(10, text_y, 400, 30))
         visualizer.update_display()
         time.sleep(0.5)
     
@@ -238,13 +238,13 @@ def main():
     config = {
         'dimensions': (1000, 1600),
         'start': (100, 100),
-        'goal': (1100, 800),
+        'goal': (1300, 800),
         'obstacle_size': 25,
-        'obstacle_count': 100,
-        'rrt_step_size': 35,
-        'prm_samples_initial': 200,
-        'num_samples_convex': 300,
-        'k_neighbors': 10,
+        'obstacle_count': 200,
+        'rrt_step_size': 50,
+        'prm_samples_initial': 30,
+        'num_samples_convex': 750,
+        'k_neighbors': 15,
         'show_roadmap': True
     }
     
