@@ -237,14 +237,14 @@ def main():
     """Main entry point"""
     config = {
         'dimensions': (1000, 1600),
-        'start': (100, 100),
-        'goal': (1300, 800),
+        'start': (50, 100),
+        'goal': (1600, 800),
         'obstacle_size': 25,
         'obstacle_count': 200,
-        'rrt_step_size': 50,
-        'prm_samples_initial': 30,
+        'rrt_step_size': 100,
+        'prm_samples_initial': 100,
         'num_samples_convex': 750,
-        'k_neighbors': 15,
+        'k_neighbors': 30,
         'show_roadmap': True
     }
     
