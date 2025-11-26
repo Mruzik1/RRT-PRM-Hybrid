@@ -347,9 +347,11 @@ class BenchmarkRunner:
             
             if result.success:
                 self.stats.successful_runs += 1
-                logging.info(f"  ✓ Success | Time: {result.total_time:.2f}s | "
-                           f"Distance: {result.hybrid_distance:.1f} | "
-                           f"Improvement: {result.improvement_over_rrt:.1f}%")
+                logging.info(f"  ✓ Success | Time: {result.total_time:.2f}s")
+                logging.info(f"    Distances: Hybrid={result.hybrid_distance:.1f}, "
+                           f"RRT={result.rrt_distance:.1f}, PRM={result.prm_distance:.1f}")
+                logging.info(f"    Improvement: vs RRT={result.improvement_over_rrt:.1f}%, "
+                           f"vs PRM={result.improvement_over_prm:.1f}%")
             else:
                 self.stats.failed_runs += 1
                 logging.info(f"  ✗ Failed: {result.error_message}")
@@ -385,11 +387,19 @@ class BenchmarkRunner:
         logging.info(f"Failed:           {self.stats.failed_runs}")
         
         if self.stats.successful_runs > 0:
+            successful = [r for r in self.stats.results if r.success]
+            avg_rrt_distance = sum(r.rrt_distance for r in successful) / len(successful)
+            avg_prm_distance = sum(r.prm_distance for r in successful) / len(successful)
+            
             logging.info(f"\nAverage metrics:")
             logging.info(f"  Time:           {self.stats.avg_total_time:.2f}s")
-            logging.info(f"  Distance:       {self.stats.avg_hybrid_distance:.1f}")
-            logging.info(f"  Improvement:    {self.stats.avg_improvement_rrt:.1f}% (vs RRT)")
-            logging.info(f"                  {self.stats.avg_improvement_prm:.1f}% (vs PRM)")
+            logging.info(f"  Distance:")
+            logging.info(f"    Hybrid:       {self.stats.avg_hybrid_distance:.1f}")
+            logging.info(f"    RRT:          {avg_rrt_distance:.1f}")
+            logging.info(f"    PRM:          {avg_prm_distance:.1f}")
+            logging.info(f"  Improvement:")
+            logging.info(f"    vs RRT:       {self.stats.avg_improvement_rrt:.1f}%")
+            logging.info(f"    vs PRM:       {self.stats.avg_improvement_prm:.1f}%")
             
             logging.info(f"\nRange:")
             logging.info(f"  Distance:       {self.stats.min_distance:.1f} - {self.stats.max_distance:.1f}")
@@ -490,11 +500,11 @@ def generate_random_config():
         'start': start,
         'goal': goal,
         'obstacle_size': rand.randint(15, 25),
-        'obstacle_count': rand.randint(250, 400),
+        'obstacle_count': rand.randint(300, 500),
         'rrt_step_size': rand.randint(30, 40),
-        'prm_samples_initial': rand.randint(50, 80),
+        'prm_samples_initial': rand.randint(80, 100),
         'num_samples_convex': rand.randint(800, 1000),
-        'k_neighbors': rand.randint(30, 50),
+        'k_neighbors': rand.randint(40, 50),
     }
     
     return config
@@ -659,9 +669,11 @@ def main():
             result = runner.run_single_iteration(seed=START_SEED + i, save_images=(SAVE_IMAGES != 'none'))
             
             if result.success:
-                logging.info(f"  ✓ Success | Time: {result.total_time:.2f}s | "
-                           f"Distance: {result.hybrid_distance:.1f} | "
-                           f"Improvement: {result.improvement_over_rrt:.1f}%")
+                logging.info(f"  ✓ Success | Time: {result.total_time:.2f}s")
+                logging.info(f"    Distances: Hybrid={result.hybrid_distance:.1f}, "
+                           f"RRT={result.rrt_distance:.1f}, PRM={result.prm_distance:.1f}")
+                logging.info(f"    Improvement: vs RRT={result.improvement_over_rrt:.1f}%, "
+                           f"vs PRM={result.improvement_over_prm:.1f}%")
             else:
                 logging.info(f"  ✗ Failed: {result.error_message}")
             
@@ -695,14 +707,20 @@ def main():
         if successful:
             avg_time = sum(r['result']['total_time'] for r in successful) / len(successful)
             avg_distance = sum(r['result']['hybrid_distance'] for r in successful) / len(successful)
+            avg_rrt_distance = sum(r['result']['rrt_distance'] for r in successful) / len(successful)
+            avg_prm_distance = sum(r['result']['prm_distance'] for r in successful) / len(successful)
             avg_improvement_rrt = sum(r['result']['improvement_over_rrt'] for r in successful) / len(successful)
             avg_improvement_prm = sum(r['result']['improvement_over_prm'] for r in successful) / len(successful)
             
             logging.info(f"\nAverage metrics:")
             logging.info(f"  Time:           {avg_time:.2f}s")
-            logging.info(f"  Distance:       {avg_distance:.1f}")
-            logging.info(f"  Improvement:    {avg_improvement_rrt:.1f}% (vs RRT)")
-            logging.info(f"                  {avg_improvement_prm:.1f}% (vs PRM)")
+            logging.info(f"  Distance:")
+            logging.info(f"    Hybrid:       {avg_distance:.1f}")
+            logging.info(f"    RRT:          {avg_rrt_distance:.1f}")
+            logging.info(f"    PRM:          {avg_prm_distance:.1f}")
+            logging.info(f"  Improvement:")
+            logging.info(f"    vs RRT:       {avg_improvement_rrt:.1f}%")
+            logging.info(f"    vs PRM:       {avg_improvement_prm:.1f}%")
         
         # Save results
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -759,9 +777,13 @@ def main():
             logging.info(f"\n{result['param_name']} = {result['param_value']}:")
             logging.info(f"  Success rate:    {result['stats']['success_rate']:.1f}%")
             logging.info(f"  Avg time:        {result['stats']['avg_time']:.2f}s")
-            logging.info(f"  Avg distance:    {result['stats']['avg_distance']:.1f}")
-            logging.info(f"  Improvement RRT: {result['stats']['avg_improvement_rrt']:.1f}%")
-            logging.info(f"  Improvement PRM: {result['stats']['avg_improvement_prm']:.1f}%")
+            logging.info(f"  Avg distances:")
+            logging.info(f"    Hybrid:        {result['stats']['avg_distance']:.1f}")
+            logging.info(f"    RRT:           {result['stats'].get('avg_rrt_distance', 0):.1f}")
+            logging.info(f"    PRM:           {result['stats'].get('avg_prm_distance', 0):.1f}")
+            logging.info(f"  Improvement:")
+            logging.info(f"    vs RRT:        {result['stats']['avg_improvement_rrt']:.1f}%")
+            logging.info(f"    vs PRM:        {result['stats']['avg_improvement_prm']:.1f}%")
         
         # Save comparison results
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
