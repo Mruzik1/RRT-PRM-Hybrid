@@ -13,12 +13,41 @@ class BenchmarkAnalyzer:
         with open(results_file, 'r') as f:
             self.data = json.load(f)
         
-        self.successful_results = [
-            r for r in self.data['results'] if r['success']
-        ]
+        # Handle different JSON formats
+        if isinstance(self.data, list):
+            # Random results format: list of {iteration, config, result}
+            self.successful_results = [
+                item['result'] for item in self.data if item['result']['success']
+            ]
+            # Reconstruct stats
+            total = len(self.data)
+            successful = len(self.successful_results)
+            self.data = {
+                'stats': {
+                    'total_runs': total,
+                    'successful_runs': successful,
+                    'failed_runs': total - successful,
+                    'success_rate': (successful / total * 100) if total > 0 else 0,
+                    'avg_total_time': sum(r['total_time'] for r in self.successful_results) / len(self.successful_results) if self.successful_results else 0,
+                    'avg_hybrid_distance': sum(r['hybrid_distance'] for r in self.successful_results) / len(self.successful_results) if self.successful_results else 0,
+                    'avg_improvement_rrt': sum(r['improvement_over_rrt'] for r in self.successful_results) / len(self.successful_results) if self.successful_results else 0,
+                    'avg_improvement_prm': sum(r['improvement_over_prm'] for r in self.successful_results) / len(self.successful_results) if self.successful_results else 0,
+                    'min_distance': min(r['hybrid_distance'] for r in self.successful_results) if self.successful_results else 0,
+                    'max_distance': max(r['hybrid_distance'] for r in self.successful_results) if self.successful_results else 0,
+                    'min_time': min(r['total_time'] for r in self.successful_results) if self.successful_results else 0,
+                    'max_time': max(r['total_time'] for r in self.successful_results) if self.successful_results else 0,
+                },
+                'config': self.data[0]['config'] if self.data else {},
+                'results': self.successful_results
+            }
+        else:
+            # Standard benchmark format: {config, stats, results}
+            self.successful_results = [
+                r for r in self.data['results'] if r['success']
+            ]
         
         # Create figures directory if it doesn't exist
-        self.figures_dir = Path('benchmark/figures')
+        self.figures_dir = Path('figures_base')
         self.figures_dir.mkdir(parents=True, exist_ok=True)
     
     def plot_distance_comparison(self, save_path: str = None):
@@ -39,15 +68,19 @@ class BenchmarkAnalyzer:
         x = np.arange(len(self.successful_results))
         width = 0.25
         
-        ax.bar(x - width, rrt_distances, width, label='RRT', alpha=0.8, color='#64B5F6')
-        ax.bar(x, prm_distances, width, label='PRM', alpha=0.8, color='#9400D3')
-        ax.bar(x + width, hybrid_distances, width, label='Hybrid', alpha=0.8, color='#4CAF50')
+        # Draw Hybrid first (in the back), then RRT and PRM on top
+        ax.bar(x, hybrid_distances, width, label='Hybrid', alpha=0.8, color='#4CAF50', zorder=1)
+        ax.bar(x - width, rrt_distances, width, label='RRT', alpha=0.9, color='#64B5F6', zorder=2)
+        ax.bar(x + width, prm_distances, width, label='PRM', alpha=0.9, color='#9400D3', zorder=2)
         
         ax.set_xlabel('Iteration', fontsize=12)
         ax.set_ylabel('Path Distance', fontsize=12)
         ax.set_title('Path Distance Comparison', fontsize=14, fontweight='bold')
-        ax.legend(fontsize=11)
-        ax.grid(True, alpha=0.3)
+        # Reorder legend to match visual importance
+        handles, labels = ax.get_legend_handles_labels()
+        order = [1, 2, 0]  # RRT, PRM, Hybrid
+        ax.legend([handles[i] for i in order], [labels[i] for i in order], fontsize=11)
+        ax.grid(True, alpha=0.3, zorder=0)
         
         plt.tight_layout()
         plt.savefig(save_path, dpi=300, bbox_inches='tight')
@@ -251,13 +284,25 @@ def main():
     """Main entry point"""
     import sys
     
-    if len(sys.argv) < 2:
-        print("Usage: python analyze_results.py <results_file.json>")
-        print("\nExample:")
-        print("  python benchmark/analyze_results.py benchmark/benchmark_results_20251126_192133.json")
-        return
+    results_file = None
     
-    results_file = sys.argv[1]
+    if len(sys.argv) >= 2:
+        results_file = sys.argv[1]
+    else:
+        # Auto-find the latest results file
+        benchmark_dir = Path('benchmark')
+        json_files = list(benchmark_dir.glob('*results*.json'))
+        
+        if not json_files:
+            print("Error: No results files found in benchmark directory")
+            print("\nUsage: python analyze_results.py <results_file.json>")
+            print("\nExample:")
+            print("  python benchmark/analyze_results.py benchmark/benchmark_results_20251126_192133.json")
+            return
+        
+        # Get the most recent file
+        results_file = max(json_files, key=lambda p: p.stat().st_mtime)
+        print(f"Using latest results file: {results_file}")
     
     if not Path(results_file).exists():
         print(f"Error: File not found: {results_file}")

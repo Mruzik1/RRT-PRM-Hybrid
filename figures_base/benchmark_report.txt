@@ -1,0 +1,39 @@
+======================================================================
+BENCHMARK REPORT
+======================================================================
+
+Configuration:
+  dimensions               : [1000, 1600]
+  start                    : [1409, 214]
+  goal                     : [151, 381]
+  obstacle_size            : 18
+  obstacle_count           : 357
+  rrt_step_size            : 32
+  prm_samples_initial      : 83
+  num_samples_convex       : 973
+  k_neighbors              : 48
+
+======================================================================
+Results Summary:
+  Total iterations:          100
+  Successful:                89 (89.0%)
+  Failed:                    11
+
+======================================================================
+Average Performance:
+  Execution time:            1.167s
+  Path distance:             894.9
+  Improvement over RRT:      22.1%
+  Improvement over PRM:      13.4%
+
+======================================================================
+Performance Range:
+  Distance:                  709.5 - 1374.0
+  Time:                      0.753s - 1.588s
+
+======================================================================
+Improvement Statistics:
+  vs RRT - Min/Max/Std:      7.3% / 53.4% / 10.0%
+  vs PRM - Min/Max/Std:      -0.1% / 57.2% / 12.5%
+
+======================================================================

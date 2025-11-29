@@ -244,6 +244,19 @@ class BenchmarkRunner:
                         visualizer.draw_edge((graph.x[i], graph.y[i]), (graph.x[j], graph.y[j]), 
                                            color=roadmap_color)
             
+            # Redraw RRT and PRM paths on top of roadmap
+            rrt_color = (100, 150, 255)
+            for i in range(len(graph.rrt_path) - 1):
+                visualizer.draw_edge(graph.rrt_path[i], graph.rrt_path[i+1], color=rrt_color)
+            for point in graph.rrt_path:
+                visualizer.draw_node(point, color=rrt_color, radius=3)
+            
+            prm_color = (148, 0, 211)
+            for i in range(len(graph.prm_path) - 1):
+                visualizer.draw_edge(graph.prm_path[i], graph.prm_path[i+1], color=prm_color)
+            for point in graph.prm_path:
+                visualizer.draw_node(point, color=prm_color, radius=3)
+            
             visualizer.draw_text("Phase 3: Hybrid Roadmap (light green)", 
                                position=(10, text_y), clear_area=(10, text_y, 400, 30))
             visualizer.update_display()
@@ -286,6 +299,19 @@ class BenchmarkRunner:
             
             result.total_time = (result.rrt_time + result.prm_time + result.hull_time + 
                                result.sample_time + result.build_time + result.search_time)
+            
+            # Redraw RRT and PRM paths on top before drawing final hybrid path
+            rrt_color = (100, 150, 255)
+            for i in range(len(graph.rrt_path) - 1):
+                visualizer.draw_edge(graph.rrt_path[i], graph.rrt_path[i+1], color=rrt_color)
+            for point in graph.rrt_path:
+                visualizer.draw_node(point, color=rrt_color, radius=3)
+            
+            prm_color = (148, 0, 211)
+            for i in range(len(graph.prm_path) - 1):
+                visualizer.draw_edge(graph.prm_path[i], graph.prm_path[i+1], color=prm_color)
+            for point in graph.prm_path:
+                visualizer.draw_node(point, color=prm_color, radius=3)
             
             # Draw and save final path
             visualizer.draw_path(path_coords)
