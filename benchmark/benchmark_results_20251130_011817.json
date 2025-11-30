@@ -1,0 +1,56 @@
+{
+  "config": {
+    "dimensions": [
+      1200,
+      1200
+    ],
+    "start": [
+      100,
+      100
+    ],
+    "goal": [
+      1000,
+      1000
+    ],
+    "obstacle_size": 35,
+    "obstacle_count": 15,
+    "rrt_step_size": 50,
+    "prm_samples_initial": 100,
+    "num_samples_convex": 200,
+    "k_neighbors": 10
+  },
+  "stats": {
+    "total_runs": 1,
+    "successful_runs": 1,
+    "failed_runs": 0,
+    "success_rate": 100.0,
+    "avg_total_time": 0.06700277328491211,
+    "avg_hybrid_distance": 1297.9295872869309,
+    "avg_improvement_rrt": 12.615073118118364,
+    "avg_improvement_prm": 2.64546334755968,
+    "min_distance": 1297.9295872869309,
+    "max_distance": 1297.9295872869309,
+    "min_time": 0.06700277328491211,
+    "max_time": 0.06700277328491211
+  },
+  "results": [
+    {
+      "success": true,
+      "total_time": 0.06700277328491211,
+      "hybrid_distance": 1297.9295872869309,
+      "hybrid_nodes": 22,
+      "rrt_distance": 1485.3014514063102,
+      "prm_distance": 1333.1988748717408,
+      "improvement_over_rrt": 12.615073118118364,
+      "improvement_over_prm": 2.64546334755968,
+      "error_message": "",
+      "images": {
+        "rrt": "images\\run_20251130_011816\\iteration_896993\\01_rrt.png",
+        "prm": "images\\run_20251130_011816\\iteration_896993\\02_prm.png",
+        "hull": "images\\run_20251130_011816\\iteration_896993\\03_hull.png",
+        "roadmap": "images\\run_20251130_011816\\iteration_896993\\04_roadmap.png",
+        "final": "images\\run_20251130_011816\\iteration_896993\\05_final.png"
+      }
+    }
+  ]
+}

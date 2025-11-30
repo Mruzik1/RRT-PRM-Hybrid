@@ -156,12 +156,24 @@ class BenchmarkRunner:
             result.rrt_nodes = len(graph.rrt_path)
             result.rrt_distance = self._calculate_path_length(graph.rrt_path)
             
-            # Draw and save RRT
-            rrt_color = (100, 150, 255)
+            # Draw and save RRT - show all tree edges
+            rrt_tree_color = (200, 220, 255)  # Light blue for tree
+            rrt_path_color = (100, 150, 255)  # Dark blue for path
+            
+            # Draw all RRT tree edges
+            if graph.rrt_graph:
+                for i in range(1, graph.rrt_graph.node_count()):
+                    parent_idx = graph.rrt_graph.parent[i]
+                    if parent_idx >= 0:
+                        node_pos = (graph.rrt_graph.x[i], graph.rrt_graph.y[i])
+                        parent_pos = (graph.rrt_graph.x[parent_idx], graph.rrt_graph.y[parent_idx])
+                        visualizer.draw_edge(parent_pos, node_pos, color=rrt_tree_color, width=1)
+            
+            # Draw RRT path on top
             for i in range(len(graph.rrt_path) - 1):
-                visualizer.draw_edge(graph.rrt_path[i], graph.rrt_path[i+1], color=rrt_color)
+                visualizer.draw_edge(graph.rrt_path[i], graph.rrt_path[i+1], color=rrt_path_color, width=3)
             for point in graph.rrt_path:
-                visualizer.draw_node(point, color=rrt_color, radius=3)
+                visualizer.draw_node(point, color=rrt_path_color, radius=4)
             
             text_y = self.config['dimensions'][0] - 40
             visualizer.draw_text("Phase 1a: RRT Path (light blue)", 
@@ -181,12 +193,28 @@ class BenchmarkRunner:
             result.prm_nodes = len(graph.prm_path)
             result.prm_distance = self._calculate_path_length(graph.prm_path)
             
-            # Draw and save PRM
-            prm_color = (148, 0, 211)
+            # Clear screen for PRM (redraw obstacles and start/goal)
+            visualizer.surface.fill((255, 255, 255))
+            visualizer.draw_initial(obstacles)
+            
+            # Draw and save PRM - show all graph edges
+            prm_graph_color = (220, 180, 255)  # Light purple for graph
+            prm_path_color = (148, 0, 211)     # Dark purple for path
+            
+            # Draw all PRM graph edges
+            if graph.prm_graph:
+                for i in range(graph.prm_graph.node_count()):
+                    for j in graph.prm_graph.neighbors[i]:
+                        if i < j:  # Draw each edge only once
+                            node_i = (graph.prm_graph.x[i], graph.prm_graph.y[i])
+                            node_j = (graph.prm_graph.x[j], graph.prm_graph.y[j])
+                            visualizer.draw_edge(node_i, node_j, color=prm_graph_color, width=1)
+            
+            # Draw PRM path on top
             for i in range(len(graph.prm_path) - 1):
-                visualizer.draw_edge(graph.prm_path[i], graph.prm_path[i+1], color=prm_color)
+                visualizer.draw_edge(graph.prm_path[i], graph.prm_path[i+1], color=prm_path_color, width=3)
             for point in graph.prm_path:
-                visualizer.draw_node(point, color=prm_color, radius=3)
+                visualizer.draw_node(point, color=prm_path_color, radius=4)
             
             visualizer.draw_text("Phase 1b: PRM Path (violet)", 
                                position=(10, text_y), clear_area=(10, text_y, 400, 30))
@@ -203,14 +231,31 @@ class BenchmarkRunner:
                 return result
             result.hull_time = time.time() - start_time
             
-            # Draw and save convex hull
+            # Clear screen and redraw for convex hull
+            visualizer.surface.fill((255, 255, 255))
+            visualizer.draw_initial(obstacles)
+            
+            # Draw convex hull
             hull_vertices = graph.get_convex_hull_vertices()
             if hull_vertices is not None:
                 hull_color = (255, 165, 0)
                 for i in range(len(hull_vertices)):
                     p1 = tuple(hull_vertices[i].astype(int))
                     p2 = tuple(hull_vertices[(i+1) % len(hull_vertices)].astype(int))
-                    pygame.draw.line(visualizer.surface, hull_color, p1, p2, 2)
+                    pygame.draw.line(visualizer.surface, hull_color, p1, p2, 3)
+                
+                # Draw only RRT and PRM paths (no graph edges)
+                rrt_path_color = (100, 150, 255)
+                for i in range(len(graph.rrt_path) - 1):
+                    visualizer.draw_edge(graph.rrt_path[i], graph.rrt_path[i+1], color=rrt_path_color, width=3)
+                for point in graph.rrt_path:
+                    visualizer.draw_node(point, color=rrt_path_color, radius=4)
+                
+                prm_path_color = (148, 0, 211)
+                for i in range(len(graph.prm_path) - 1):
+                    visualizer.draw_edge(graph.prm_path[i], graph.prm_path[i+1], color=prm_path_color, width=3)
+                for point in graph.prm_path:
+                    visualizer.draw_node(point, color=prm_path_color, radius=4)
                 
                 visualizer.draw_text("Phase 2: Convex Hull (orange)", 
                                    position=(10, text_y), clear_area=(10, text_y, 400, 30))
@@ -243,19 +288,6 @@ class BenchmarkRunner:
                     if i < j:
                         visualizer.draw_edge((graph.x[i], graph.y[i]), (graph.x[j], graph.y[j]), 
                                            color=roadmap_color)
-            
-            # Redraw RRT and PRM paths on top of roadmap
-            rrt_color = (100, 150, 255)
-            for i in range(len(graph.rrt_path) - 1):
-                visualizer.draw_edge(graph.rrt_path[i], graph.rrt_path[i+1], color=rrt_color)
-            for point in graph.rrt_path:
-                visualizer.draw_node(point, color=rrt_color, radius=3)
-            
-            prm_color = (148, 0, 211)
-            for i in range(len(graph.prm_path) - 1):
-                visualizer.draw_edge(graph.prm_path[i], graph.prm_path[i+1], color=prm_color)
-            for point in graph.prm_path:
-                visualizer.draw_node(point, color=prm_color, radius=3)
             
             visualizer.draw_text("Phase 3: Hybrid Roadmap (light green)", 
                                position=(10, text_y), clear_area=(10, text_y, 400, 30))
@@ -299,19 +331,6 @@ class BenchmarkRunner:
             
             result.total_time = (result.rrt_time + result.prm_time + result.hull_time + 
                                result.sample_time + result.build_time + result.search_time)
-            
-            # Redraw RRT and PRM paths on top before drawing final hybrid path
-            rrt_color = (100, 150, 255)
-            for i in range(len(graph.rrt_path) - 1):
-                visualizer.draw_edge(graph.rrt_path[i], graph.rrt_path[i+1], color=rrt_color)
-            for point in graph.rrt_path:
-                visualizer.draw_node(point, color=rrt_color, radius=3)
-            
-            prm_color = (148, 0, 211)
-            for i in range(len(graph.prm_path) - 1):
-                visualizer.draw_edge(graph.prm_path[i], graph.prm_path[i+1], color=prm_color)
-            for point in graph.prm_path:
-                visualizer.draw_node(point, color=prm_color, radius=3)
             
             # Draw and save final path
             visualizer.draw_path(path_coords)
@@ -513,7 +532,7 @@ def generate_random_config():
     )
     
     # Make sure start and goal are not too close
-    min_distance = 700
+    min_distance = 900
     while ((goal[0] - start[0])**2 + (goal[1] - start[1])**2)**0.5 < min_distance:
         goal = (
             rand.randint(margin, main_dimension[1] - margin),
@@ -525,8 +544,8 @@ def generate_random_config():
         'dimensions': main_dimension_1,
         'start': start,
         'goal': goal,
-        'obstacle_size': rand.randint(15, 25),
-        'obstacle_count': rand.randint(300, 500),
+        'obstacle_size': rand.randint(40, 40),
+        'obstacle_count': rand.randint(15, 15),
         'rrt_step_size': rand.randint(30, 40),
         'prm_samples_initial': rand.randint(80, 100),
         'num_samples_convex': rand.randint(800, 1000),
@@ -622,27 +641,27 @@ def generate_config_variations():
 def main():
     """Main entry point for benchmark"""
     # Configuration
-    MODE = 'random'  # 'single', 'variations', or 'random'
-    ITERATIONS = 100
+    MODE = 'single'  # 'single', 'variations', or 'random'
+    ITERATIONS = 1
     SAVE_IMAGES = 'all'  # 'all', 'successful', 'failed', or 'none'
-    START_SEED = 0
+    START_SEED = None  # Use None for random seed, or set a number for reproducible results
     
     # Single config parameters (only used if MODE = 'single')
     START_POS = (100, 100)      # Start position (x, y)
-    GOAL_POS = (700, 1400)      # Goal position (x, y)
-    OBSTACLES = 150
-    SAMPLES = 800
-    K_NEIGHBORS = 15
+    GOAL_POS = (1000, 1000)      # Goal position (x, y)
+    OBSTACLES = 15
+    SAMPLES = 200
+    K_NEIGHBORS = 10
     RRT_STEP = 50
     PRM_STEPS = 100
     
     if MODE == 'single':
         # Run single configuration
         config = {
-            'dimensions': (1000, 1600),
+            'dimensions': (1200, 1200),
             'start': START_POS,
             'goal': GOAL_POS,
-            'obstacle_size': 25,
+            'obstacle_size': 35,
             'obstacle_count': OBSTACLES,
             'rrt_step_size': RRT_STEP,
             'prm_samples_initial': PRM_STEPS,
@@ -656,7 +675,12 @@ def main():
                     f"k_neighbors={K_NEIGHBORS}, rrt_step={RRT_STEP}")
         
         runner = BenchmarkRunner(config, headless=False, save_images=(SAVE_IMAGES != 'none'))
-        runner.run_benchmark(num_iterations=ITERATIONS, start_seed=START_SEED, 
+        
+        # If START_SEED is None, use a random seed based on current time
+        actual_seed = START_SEED if START_SEED is not None else int(time.time() * 1000) % 1000000
+        logging.info(f"Using seed: {actual_seed}")
+        
+        runner.run_benchmark(num_iterations=ITERATIONS, start_seed=actual_seed, 
                             save_images_for=SAVE_IMAGES)
         runner.print_summary()
         runner.save_results()

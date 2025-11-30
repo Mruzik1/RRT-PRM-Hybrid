@@ -32,9 +32,10 @@ class MapVisualizer:
         for node in path:
             pygame.draw.circle(self.surface, self.path_color, node, 4, 0)
 
-    def draw_edge(self, node1, node2, color=None):
+    def draw_edge(self, node1, node2, color=None, width=None):
         color = color or self.tree_color
-        pygame.draw.line(self.surface, color, node1, node2, self.edge_thickness)
+        width = width or self.edge_thickness
+        pygame.draw.line(self.surface, color, node1, node2, width)
 
     def draw_node(self, position, color=None, radius=None):
         color = color or self.obstacle_color

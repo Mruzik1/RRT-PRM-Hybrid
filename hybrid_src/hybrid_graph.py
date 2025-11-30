@@ -22,6 +22,8 @@ class HybridGraph(Graph):
         
         self.rrt_path = []
         self.prm_path = []
+        self.rrt_graph = None
+        self.prm_graph = None
         self.convex_hull = None
         self.convex_hull_points = None
         self.convex_hull_polygon = None
@@ -50,6 +52,7 @@ class HybridGraph(Graph):
         
         if rrt.goal_reached:
             self.rrt_path = rrt.get_path_coordinates()
+            self.rrt_graph = rrt
             print(f" path found ({len(self.rrt_path)} nodes)")
             return True
         print(" failed")
@@ -85,6 +88,7 @@ class HybridGraph(Graph):
         
         if prm.find_path():
             self.prm_path = prm.get_path_coordinates()
+            self.prm_graph = prm
             print(f" path found ({len(self.prm_path)} nodes)")
             return True
         print(" failed")
